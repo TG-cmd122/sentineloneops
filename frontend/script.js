@@ -7,9 +7,11 @@ const statusBadge = document.getElementById("backendStatus");
 const btnRefresh = document.getElementById("btnRefresh");
 const btnCreate = document.getElementById("btnCreateIncident");
 
+// Variável para guardar o gráfico (para poder deletar e recriar)
+let myChart = null;
+
 // === FUNÇÕES DE AJUDA ===
 function toast(titulo, msg) {
-    // Cria um aviso flutuante simples
     const div = document.createElement("div");
     div.className = "toast";
     div.innerHTML = `<b>${titulo}</b><br>${msg}`;
@@ -18,20 +20,60 @@ function toast(titulo, msg) {
 }
 
 function getBadge(severity) {
-    // Retorna a cor certa para cada gravidade
-    const cores = {
-        crit: "crit",
-        warn: "warn",
-        info: "info",
-        ok: "ok"
-    };
+    const cores = { crit: "crit", warn: "warn", info: "info", ok: "ok" };
     const tipo = cores[severity] || "info";
     return `<span class="sev ${tipo}"><i></i>${severity.toUpperCase()}</span>`;
 }
 
+// === LÓGICA DO GRÁFICO (CHART.JS) ===
+function atualizarGrafico(crit, warn, total) {
+    const ctx = document.getElementById('kpiChart');
+    if (!ctx) return;
+
+    const healthy = total - crit - warn;
+
+    // Se o gráfico já existe, atualizamos os dados apenas
+    if (myChart) {
+        myChart.data.datasets[0].data = [crit, warn, (healthy < 0 ? 0 : healthy)];
+        myChart.update();
+        return;
+    }
+
+    // Se não existe, criamos um novo
+    myChart = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: ['Crítico', 'Alerta', 'Saudável'],
+            datasets: [{
+                data: [crit, warn, healthy],
+                backgroundColor: [
+                    '#ff3fb4', // Mag (Crítico)
+                    '#ffc24a', // Amber (Warn)
+                    '#b9ff4a'  // Lime (Saudável)
+                ],
+                borderWidth: 0,
+                hoverOffset: 4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false }, // Esconde legenda padrão para ficar clean
+                tooltip: {
+                    backgroundColor: '#111',
+                    bodyColor: '#fff',
+                    borderColor: '#333',
+                    borderWidth: 1
+                }
+            },
+            cutout: '75%' // Deixa a rosca mais fina
+        }
+    });
+}
+
 // === LÓGICA PRINCIPAL ===
 
-// 1. Buscar incidentes do Backend
 async function carregarDados() {
     try {
         const res = await fetch(`${API_BASE}/api/incidents`);
@@ -39,7 +81,6 @@ async function carregarDados() {
 
         const lista = await res.json();
         
-        // Atualizar status para ONLINE
         if (statusBadge) {
             statusBadge.textContent = "ONLINE";
             statusBadge.style.color = "var(--a-lime)";
@@ -57,7 +98,6 @@ async function carregarDados() {
     }
 }
 
-// 2. Desenhar a tabela na tela
 function renderizarTabela(lista) {
     if (lista.length === 0) {
         tabela.innerHTML = `<tr><td colspan="5" style="text-align:center; padding: 20px; color: var(--muted);">Nenhum incidente encontrado.</td></tr>`;
@@ -77,22 +117,23 @@ function renderizarTabela(lista) {
     `).join("");
 }
 
-// 3. Atualizar os números (KPIs) lá em cima
 function atualizarContadores(lista) {
     const crit = lista.filter(i => i.severity === "crit").length;
     const warn = lista.filter(i => i.severity === "warn").length;
+    const total = lista.length;
     
-    // Tenta atualizar se os elementos existirem
     const elCrit = document.getElementById("countCrit");
     const elWarn = document.getElementById("countWarn");
     const elTotal = document.getElementById("countTotal");
 
     if (elCrit) elCrit.textContent = crit;
     if (elWarn) elWarn.textContent = warn;
-    if (elTotal) elTotal.textContent = lista.length;
+    if (elTotal) elTotal.textContent = total;
+
+    // Atualiza o gráfico com os novos números
+    atualizarGrafico(crit, warn, total);
 }
 
-// 4. Criar um novo incidente (Botão Simular)
 async function criarIncidente() {
     try {
         await fetch(`${API_BASE}/api/incidents`, {
@@ -105,13 +146,12 @@ async function criarIncidente() {
             })
         });
         toast("Sucesso", "Incidente criado no Backend!");
-        carregarDados(); // Recarrega a lista na hora
+        carregarDados();
     } catch (erro) {
         toast("Erro", "Não foi possível criar o incidente.");
     }
 }
 
-// 5. Função da IA (chamada pelo botão da tabela)
 window.analisarIA = async function(id) {
     const section = document.getElementById("aiSection");
     const content = document.getElementById("aiContent");
@@ -124,17 +164,15 @@ window.analisarIA = async function(id) {
         const data = await res.json();
         if (content) content.innerHTML = data.explanation || "Sem resposta.";
     } catch (erro) {
-        if (content) content.innerHTML = "Erro ao consultar IA (Verifique a API Key no backend).";
+        if (content) content.innerHTML = "Erro ao consultar IA.";
     }
 };
 
 // === INICIALIZAÇÃO ===
-// Liga os botões às funções
 if (btnCreate) btnCreate.addEventListener("click", criarIncidente);
 if (btnRefresh) btnRefresh.addEventListener("click", carregarDados);
 
-// Carrega dados assim que abre a página
 carregarDados();
 
-// Atualiza sozinho a cada 5 segundos
+// Auto-Refresh a cada 5 segundos
 setInterval(carregarDados, 5000);

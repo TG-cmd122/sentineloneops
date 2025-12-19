@@ -9,6 +9,8 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,400..900&display=swap" rel="stylesheet">
   
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  
   <link rel="stylesheet" href="style.css">
 </head>
 
@@ -48,23 +50,33 @@
               <div class="icon">📦</div>
               <div><h3>Inventário</h3><span>Ativos & Services</span></div>
             </div>
+            <div class="railItem" id="tab-oracle" onclick="callOracle()" style="border-color: var(--a-mag);">
+              <div class="icon">🔮</div>
+              <div><h3 style="color: var(--a-mag);">Oráculo do Caos</h3><span>Prever Desastres</span></div>
+            </div>
           </div>
         </div>
       </aside>
 
       <section class="content">
         <article class="hero reveal">
-          <div class="heroInner">
-            <h1>Observabilidade Autônoma</h1>
-            <p class="sub">Monitoramento inteligente integrado ao seu backend FastAPI.</p>
-            <div class="heroActions">
-              <button class="btn primary" id="btnCreateIncident">Simular Incidente (POST)</button>
+          <div class="heroInner" style="display: flex; flex-wrap: wrap; gap: 20px; align-items: center;">
+            <div style="flex: 1; min-width: 300px;">
+                <h1>Observabilidade Autônoma</h1>
+                <p class="sub">Monitoramento inteligente integrado ao seu backend FastAPI.</p>
+                <div class="heroActions">
+                <button class="btn primary" id="btnCreateIncident">Simular Incidente (POST)</button>
+                </div>
+                
+                <div class="miniKpis">
+                <div class="kpi"><b id="countCrit">0</b><span>Críticos</span></div>
+                <div class="kpi"><b id="countWarn">0</b><span>Alertas</span></div>
+                <div class="kpi"><b id="countTotal">0</b><span>Total</span></div>
+                </div>
             </div>
-            
-            <div class="miniKpis">
-              <div class="kpi"><b id="countCrit">0</b><span>Críticos</span></div>
-              <div class="kpi"><b id="countWarn">0</b><span>Alertas</span></div>
-              <div class="kpi"><b id="countTotal">0</b><span>Total</span></div>
+
+            <div style="width: 220px; height: 220px; position: relative;">
+                <canvas id="kpiChart"></canvas>
             </div>
           </div>
         </article>
@@ -115,7 +127,7 @@
           </div>
         </article>
 
-        <article class="card wide reveal" id="aiSection" style="display:none;">
+        <article class="card wide reveal" id="aiSection" style="display:none; border-color: var(--a-lime);">
           <div class="cardHead">
             <h2>🤖 Análise da IA</h2>
             <button class="btn ghost" onclick="document.getElementById('aiSection').style.display='none'">Fechar</button>
@@ -127,6 +139,18 @@
           </div>
         </article>
 
+        <article class="card wide reveal" id="oracleSection" style="display:none; border-color: var(--a-mag); box-shadow: 0 0 30px rgba(255, 63, 180, 0.2);">
+            <div class="cardHead" style="background: rgba(255, 63, 180, 0.1);">
+              <h2 style="color: var(--a-mag);">🔮 Oráculo do Caos</h2>
+              <button class="btn ghost" onclick="document.getElementById('oracleSection').style.display='none'">Fechar</button>
+            </div>
+            <div class="cardBody">
+              <div class="insightBox">
+                <div id="oracleContent">Invocando os espíritos da máquina...</div>
+              </div>
+            </div>
+          </article>
+
       </section>
     </div>
   </main>
@@ -134,15 +158,12 @@
   <div class="toastWrap" id="toasts"></div>
 
   <script>
-    // URL DA API (Seu link do Cloud Run)
+    // URL DA API
     const API_BASE = "https://sentineloneops-660011594323.southamerica-east1.run.app";
 
-    // --- FUNÇÃO DE TEMA (DARK/LIGHT) ---
     function toggleTheme() {
       const html = document.documentElement;
       const btn = document.getElementById('btnTheme');
-      
-      // Se estiver dark, muda para light e vice-versa
       if (html.getAttribute('data-theme') === 'dark') {
         html.setAttribute('data-theme', 'light');
         btn.innerText = "Tema: Light";
@@ -152,51 +173,39 @@
       }
     }
 
-    // --- FUNÇÃO DE ABAS (Trocar telas) ---
     async function switchTab(tabName) {
-      // 1. Atualiza o visual da barra lateral (quem está ativo)
       document.querySelectorAll('.railItem').forEach(el => el.classList.remove('active'));
-      document.getElementById(`tab-${tabName}`).classList.add('active');
+      const tab = document.getElementById(`tab-${tabName}`);
+      if(tab) tab.classList.add('active');
 
-      // 2. Esconde todas as telas
       document.getElementById('view-incidents').style.display = 'none';
       document.getElementById('view-inventory').style.display = 'none';
 
-      // 3. Mostra a tela certa
-      document.getElementById(`view-${tabName}`).style.display = 'block';
+      const view = document.getElementById(`view-${tabName}`);
+      if(view) view.style.display = 'block';
 
-      // 4. Se for inventário, carrega os dados
-      if (tabName === 'inventory') {
-        loadInventory();
-      }
+      if (tabName === 'inventory') loadInventory();
     }
 
-    // --- CARREGAR INVENTÁRIO DO PYTHON ---
     async function loadInventory() {
       const table = document.getElementById('inventoryTable');
       table.innerHTML = '<tr><td colspan="5">Buscando dados na nuvem...</td></tr>';
-
       try {
         const res = await fetch(`${API_BASE}/api/inventory`);
         const data = await res.json();
-
-        table.innerHTML = ""; // Limpa
-
+        table.innerHTML = "";
         data.forEach(item => {
-          // Define cor do status
-          let statusColor = "green"; 
-          if(item.status === 'Offline') statusColor = "red";
-          if(item.status === 'Warning') statusColor = "orange";
+          let statusColor = "var(--a-lime)"; 
+          if(item.status === 'Offline') statusColor = "var(--a-mag)";
+          if(item.status === 'Warning') statusColor = "var(--a-amber)";
 
-          const row = `
-            <tr>
+          const row = `<tr>
               <td><code>${item.id}</code></td>
               <td><b>${item.name}</b></td>
               <td>${item.type}</td>
               <td>${item.region}</td>
               <td><span style="color:${statusColor}">● ${item.status}</span></td>
-            </tr>
-          `;
+            </tr>`;
           table.innerHTML += row;
         });
       } catch (error) {
@@ -205,13 +214,28 @@
       }
     }
 
-    // --- FUNÇÕES ANTIGAS (Limpar e Scripts) ---
     async function clearHistory() {
       if (!confirm("⚠️ ATENÇÃO: Isso vai apagar TODOS os incidentes.\n\nTem certeza?")) return;
       try {
         await fetch(`${API_BASE}/api/incidents`, { method: "DELETE" });
         window.location.reload();
       } catch (e) { alert("Erro ao apagar"); }
+    }
+
+    // --- NOVA FUNÇÃO: ORÁCULO DO CAOS ---
+    async function callOracle() {
+        const modal = document.getElementById('oracleSection');
+        const content = document.getElementById('oracleContent');
+        modal.style.display = 'block';
+        content.innerHTML = "🔮 Sintonizando com a entropia do universo...";
+        
+        try {
+            const res = await fetch(`${API_BASE}/api/oracle`);
+            const data = await res.json();
+            content.innerHTML = data.prediction;
+        } catch (e) {
+            content.innerHTML = "O Oráculo está silencioso (Erro de conexão).";
+        }
     }
   </script>
 

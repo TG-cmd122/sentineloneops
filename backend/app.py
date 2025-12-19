@@ -1,5 +1,6 @@
 import json
 import os
+import random
 import sys
 from datetime import datetime
 from pathlib import Path
@@ -40,7 +41,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# === PERSISTÊNCIA (Banco de dados simples) ===
+# === PERSISTÊNCIA ===
 BASE_DIR = Path(__file__).resolve().parent
 DATA_FILE = BASE_DIR / "data.json"
 
@@ -59,7 +60,7 @@ def save_data(data):
 
 INCIDENTS = load_data()
 
-# === DADOS MOCKADOS DE INVENTÁRIO (Novidade!) ===
+# === DADOS MOCKADOS DE INVENTÁRIO ===
 INVENTORY_MOCK = [
     {"id": "SRV-001", "name": "Cluster Kubernetes Alpha", "type": "Servidor", "status": "Online", "region": "us-east-1"},
     {"id": "DB-PROD", "name": "PostgreSQL Primary", "type": "Database", "status": "Online", "region": "sa-east-1"},
@@ -68,21 +69,11 @@ INVENTORY_MOCK = [
     {"id": "BKP-SYS", "name": "Backup System Cold", "type": "Storage", "status": "Offline", "region": "us-west-2"},
 ]
 
-# === MODELOS ===
-class Incident(BaseModel):
-    id: str
-    severity: str
-    service: str
-    summary: str
-    opened_at: Optional[str] = None
-    acknowledged: bool = False
-
 # === ROTAS ===
 @app.get("/api/health")
 def health():
     return {"status": "ok", "timestamp": datetime.now()}
 
-# Rota de Incidentes
 @app.get("/api/incidents")
 def list_incidents():
     return INCIDENTS
@@ -108,12 +99,11 @@ def clear_all_incidents():
     save_data(INCIDENTS)
     return {"status": "success", "message": "Todos os incidentes foram apagados."}
 
-# Rota de Inventário (NOVA)
 @app.get("/api/inventory")
 def list_inventory():
     return INVENTORY_MOCK
 
-# Rota da IA
+# --- ROTA DA IA PADRÃO (Explicação) ---
 @app.get("/api/incidents/{inc_id}/explain")
 def explain_incident(inc_id: str):
     inc = next((i for i in INCIDENTS if i["id"] == inc_id), None)
@@ -142,6 +132,40 @@ def explain_incident(inc_id: str):
             return {"explanation": mock_explanation}
     
     return {"explanation": mock_explanation}
+
+# --- NOVA FUNCIONALIDADE: ORÁCULO DO CAOS ---
+@app.get("/api/oracle")
+def chaos_oracle():
+    # Escolhe um serviço aleatório do inventário para "amaldiçoar"
+    target = random.choice(INVENTORY_MOCK)
+    
+    mock_chaos = f"""
+    <h3>🔮 Visão do Caos (Simulação)</h3>
+    <p>Eu prevejo que o <b>{target['name']}</b> sofrerá uma falha catastrófica em breve.</p>
+    <ul>
+        <li><b>Cenário:</b> Um estagiário vai rodar um UPDATE sem WHERE.</li>
+        <li><b>Impacto:</b> Perda total de integridade de dados na região {target['region']}.</li>
+        <li><b>Pergunta SRE:</b> Se isso acontecesse agora, seu backup de {target['type']} estaria pronto?</li>
+    </ul>
+    """
+
+    if client:
+        prompt = f"""
+        Você é o "Oráculo do Caos", uma IA que prevê desastres de TI bizarros e criativos para treinar equipes.
+        Crie um cenário hipotético de falha catastrófica para este ativo:
+        Nome: {target['name']} | Tipo: {target['type']} | Região: {target['region']}
+        
+        Seja criativo, técnico e levemente dramático.
+        Responda em HTML (<h3> para título, <p> para texto, <ul><li> para detalhes).
+        Termine com uma pergunta desafiadora para o engenheiro.
+        """
+        try:
+            response = client.models.generate_content(model="gemini-1.5-flash", contents=prompt)
+            return {"prediction": response.text}
+        except Exception as e:
+            return {"prediction": mock_chaos}
+
+    return {"prediction": mock_chaos}
 
 # === SERVIR FRONTEND ===
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
