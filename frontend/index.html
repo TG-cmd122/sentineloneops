@@ -72,6 +72,9 @@
         <article class="card reveal">
           <div class="cardHead">
             <h2>Incidentes Recentes</h2>
+            <button onclick="clearHistory()" class="btn ghost" style="color: #ff4444; border: 1px solid #ff444433;">
+              🗑️ Limpar Tudo
+            </button>
           </div>
           <div class="cardBody">
             <table class="table">
@@ -108,29 +111,31 @@
 
   <div class="toastWrap" id="toasts"></div>
 
-  async function clearHistory() {
-    // Pergunta se o usuário tem certeza
-    if (!confirm("Tem certeza que deseja apagar TODOS os incidentes?")) return;
+  <script>
+    // Defina sua URL aqui para o botão funcionar independente do outro arquivo
+    const API_URL_DELETE = "https://sentineloneops-660011594323.southamerica-east1.run.app";
 
-    try {
-        // Chama o backend para deletar
-        // ATENÇÃO: Se seu código já tem a variável API_BASE definida, use ela.
-        // Se não, substitua API_BASE pelo link do seu site ([https://....run.app](https://....run.app))
-        const response = await fetch(`${API_BASE}/api/incidents`, {
+    async function clearHistory() {
+      // Pergunta se o usuário tem certeza
+      if (!confirm("⚠️ ATENÇÃO: Isso vai apagar TODOS os incidentes do banco de dados.\n\nTem certeza?")) return;
+
+      try {
+        const response = await fetch(`${API_URL_DELETE}/api/incidents`, {
             method: "DELETE"
         });
 
         if (response.ok) {
             alert("Histórico limpo com sucesso!");
-            window.location.reload(); // Recarrega a página para sumir tudo
+            window.location.reload(); // Recarrega a página para limpar a tabela visualmente
         } else {
-            alert("Erro ao limpar histórico.");
+            alert("Erro ao limpar histórico. Verifique o console.");
         }
-    } catch (error) {
+      } catch (error) {
         console.error("Erro:", error);
-        alert("Erro de conexão.");
+        alert("Erro de conexão ao tentar apagar.");
+      }
     }
-}
+  </script>
 
   <script type="module" src="script.js"></script>
 </body>
