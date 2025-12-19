@@ -1,5 +1,5 @@
 // === CONFIGURAÇÃO ===
-const API_BASE = "http://127.0.0.1:8000";
+const API_BASE = "https://sentineloneops-660011594323.southamerica-east1.run.app";
 
 // === ELEMENTOS DA TELA ===
 const tabela = document.getElementById("incTable");
