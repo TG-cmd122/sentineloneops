@@ -12,7 +12,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from dotenv import load_dotenv
 
-# Tenta importar a lib do Google, se falhar, segue sem ela
+# Tenta importar a lib do Google (Opcional)
 try:
     from google import genai
     HAS_GENAI = True
@@ -40,8 +40,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# === PERSISTÊNCIA ===
-# Garante que o arquivo é criado na mesma pasta do app.py
+# === PERSISTÊNCIA (Banco de dados simples) ===
 BASE_DIR = Path(__file__).resolve().parent
 DATA_FILE = BASE_DIR / "data.json"
 
@@ -60,6 +59,15 @@ def save_data(data):
 
 INCIDENTS = load_data()
 
+# === DADOS MOCKADOS DE INVENTÁRIO (Novidade!) ===
+INVENTORY_MOCK = [
+    {"id": "SRV-001", "name": "Cluster Kubernetes Alpha", "type": "Servidor", "status": "Online", "region": "us-east-1"},
+    {"id": "DB-PROD", "name": "PostgreSQL Primary", "type": "Database", "status": "Online", "region": "sa-east-1"},
+    {"id": "FW-EDGE", "name": "Firewall Perimetral", "type": "Security", "status": "Warning", "region": "global"},
+    {"id": "LB-HTTP", "name": "Load Balancer Nginx", "type": "Network", "status": "Online", "region": "sa-east-1"},
+    {"id": "BKP-SYS", "name": "Backup System Cold", "type": "Storage", "status": "Offline", "region": "us-west-2"},
+]
+
 # === MODELOS ===
 class Incident(BaseModel):
     id: str
@@ -74,6 +82,7 @@ class Incident(BaseModel):
 def health():
     return {"status": "ok", "timestamp": datetime.now()}
 
+# Rota de Incidentes
 @app.get("/api/incidents")
 def list_incidents():
     return INCIDENTS
@@ -93,87 +102,57 @@ def create_incident(data: dict):
     save_data(INCIDENTS)
     return inc
 
-# --- NOVO: ROTA PARA APAGAR TUDO ---
 @app.delete("/api/incidents")
 def clear_all_incidents():
-    INCIDENTS.clear()  # Limpa a lista da memória
-    save_data(INCIDENTS)  # Salva a lista vazia no arquivo
+    INCIDENTS.clear()
+    save_data(INCIDENTS)
     return {"status": "success", "message": "Todos os incidentes foram apagados."}
-# -----------------------------------
 
-# === IA COPILOT (MODO HÍBRIDO: REAL OU MOCK) ===
+# Rota de Inventário (NOVA)
+@app.get("/api/inventory")
+def list_inventory():
+    return INVENTORY_MOCK
+
+# Rota da IA
 @app.get("/api/incidents/{inc_id}/explain")
 def explain_incident(inc_id: str):
-    # 1. Achar o incidente
     inc = next((i for i in INCIDENTS if i["id"] == inc_id), None)
     if not inc:
         raise HTTPException(status_code=404, detail="Incidente não encontrado")
 
-    # 2. Preparar a resposta de "backup" (Simulada)
     mock_explanation = f"""
-    <p><b>🤖 Análise (Modo Offline/Fallback):</b></p>
+    <p><b>🤖 Análise (Modo Offline):</b></p>
     <p>O serviço <b>{inc['service']}</b> gerou um alerta de severidade <b>{inc['severity']}</b>.</p>
     <ul>
-        <li><b>Diagnóstico:</b> O sistema de IA não pôde ser contatado, mas o padrão sugere saturação de recursos ou timeout.</li>
-        <li><b>Ação Recomendada:</b> Verifique os logs da aplicação e reinicie o serviço se necessário.</li>
-        <li><b>Comando:</b> <code>systemctl status {inc['service']}</code></li>
+        <li><b>Diagnóstico:</b> O sistema de IA não pôde ser contatado.</li>
+        <li><b>Ação Recomendada:</b> Verifique os logs via SSH.</li>
     </ul>
     """
 
-    # 3. Tentar chamar a IA de verdade
     if client:
         prompt = f"""
         Aja como um SRE Sênior. Analise este incidente:
         ID: {inc['id']} | Serviço: {inc['service']} | Severidade: {inc['severity']} | Resumo: {inc['summary']}
-        
-        Responda APENAS em HTML (tags <p>, <b>, <ul>, <li>, <code>). Sem markdown ```html.
-        Estrutura: Análise breve, Causas Raízes, Comandos de Mitigação.
+        Responda APENAS em HTML simples (<p>, <b>, <ul>, <li>).
         """
         try:
-            # Tenta o modelo mais comum
-            response = client.models.generate_content(
-                model="gemini-1.5-flash",
-                contents=prompt
-            )
+            response = client.models.generate_content(model="gemini-1.5-flash", contents=prompt)
             return {"explanation": response.text}
         except Exception as e:
-            print(f"⚠️ Erro ao chamar Gemini (usando fallback): {e}")
-            # Se der erro, retorna o Mock silenciosamente
             return {"explanation": mock_explanation}
     
-    # Se não tiver cliente configurado, retorna Mock
     return {"explanation": mock_explanation}
 
-
-# === SERVIR FRONTEND (CORREÇÃO DE CAMINHO) ===
-# Calcula a pasta 'frontend' subindo um nível a partir de 'backend'
+# === SERVIR FRONTEND ===
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 FRONTEND_DIR = PROJECT_ROOT / "frontend"
 
-print("-" * 40)
-print(f"📂 Verificando pastas...")
-print(f"   Backend rodando em: {BASE_DIR}")
-print(f"   Procurando Frontend em: {FRONTEND_DIR}")
+if FRONTEND_DIR.exists():
+    app.mount("/", StaticFiles(directory=FRONTEND_DIR, html=True), name="frontend")
 
-if not FRONTEND_DIR.exists():
-    print("❌ ERRO: Pasta 'frontend' não encontrada!")
-    print("   Certifique-se de que a estrutura é: sentineloneops/frontend")
-else:
-    print("✅ Pasta 'frontend' encontrada!")
-    if (FRONTEND_DIR / "index.html").exists():
-        print("✅ Arquivo 'index.html' encontrado!")
-    else:
-        print("❌ AVISO: 'index.html' não está dentro da pasta frontend!")
-print("-" * 40)
-
-# Rota Raiz (Resolve o problema do F5/404)
 @app.get("/")
 def read_root():
     index_path = FRONTEND_DIR / "index.html"
     if index_path.exists():
         return FileResponse(index_path)
-    return {"error": "index.html não encontrado", "path_procurado": str(index_path)}
-
-# Monta arquivos estáticos (CSS/JS)
-if FRONTEND_DIR.exists():
-    app.mount("/", StaticFiles(directory=FRONTEND_DIR, html=True), name="frontend")
+    return {"error": "Frontend não encontrado"}

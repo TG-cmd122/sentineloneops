@@ -25,7 +25,7 @@
         </div>
         <div class="rightTools">
           <button class="btn ghost" id="btnRefresh">Atualizar</button>
-          <button class="btn" id="btnTheme">Tema: Dark</button>
+          <button class="btn" id="btnTheme" onclick="toggleTheme()">Tema: Dark</button>
         </div>
       </div>
     </div>
@@ -40,11 +40,11 @@
             <span class="pill"><span class="dot"></span><span id="backendStatus">Conectando...</span></span>
           </div>
           <div class="railList">
-            <div class="railItem active" data-view="incidents">
+            <div class="railItem active" id="tab-incidents" onclick="switchTab('incidents')">
               <div class="icon">🚨</div>
               <div><h3>Incidentes</h3><span>Gestão de Crise</span></div>
             </div>
-            <div class="railItem" data-view="inventory">
+            <div class="railItem" id="tab-inventory" onclick="switchTab('inventory')">
               <div class="icon">📦</div>
               <div><h3>Inventário</h3><span>Ativos & Services</span></div>
             </div>
@@ -69,7 +69,7 @@
           </div>
         </article>
 
-        <article class="card reveal">
+        <article class="card reveal" id="view-incidents">
           <div class="cardHead">
             <h2>Incidentes Recentes</h2>
             <button onclick="clearHistory()" class="btn ghost" style="color: #ff4444; border: 1px solid #ff444433;">
@@ -87,8 +87,30 @@
                   <th>Ações</th>
                 </tr>
               </thead>
-              <tbody id="incTable">
-                </tbody>
+              <tbody id="incTable"></tbody>
+            </table>
+          </div>
+        </article>
+
+        <article class="card reveal" id="view-inventory" style="display: none;">
+          <div class="cardHead">
+            <h2>📦 Inventário de Ativos</h2>
+            <span class="pill">Cloud Resources</span>
+          </div>
+          <div class="cardBody">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Nome do Ativo</th>
+                  <th>Tipo</th>
+                  <th>Região</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody id="inventoryTable">
+                <tr><td colspan="5">Carregando inventário...</td></tr>
+              </tbody>
             </table>
           </div>
         </article>
@@ -112,28 +134,84 @@
   <div class="toastWrap" id="toasts"></div>
 
   <script>
-    // Defina sua URL aqui para o botão funcionar independente do outro arquivo
-    const API_URL_DELETE = "https://sentineloneops-660011594323.southamerica-east1.run.app";
+    // URL DA API (Seu link do Cloud Run)
+    const API_BASE = "https://sentineloneops-660011594323.southamerica-east1.run.app";
 
-    async function clearHistory() {
-      // Pergunta se o usuário tem certeza
-      if (!confirm("⚠️ ATENÇÃO: Isso vai apagar TODOS os incidentes do banco de dados.\n\nTem certeza?")) return;
+    // --- FUNÇÃO DE TEMA (DARK/LIGHT) ---
+    function toggleTheme() {
+      const html = document.documentElement;
+      const btn = document.getElementById('btnTheme');
+      
+      // Se estiver dark, muda para light e vice-versa
+      if (html.getAttribute('data-theme') === 'dark') {
+        html.setAttribute('data-theme', 'light');
+        btn.innerText = "Tema: Light";
+      } else {
+        html.setAttribute('data-theme', 'dark');
+        btn.innerText = "Tema: Dark";
+      }
+    }
+
+    // --- FUNÇÃO DE ABAS (Trocar telas) ---
+    async function switchTab(tabName) {
+      // 1. Atualiza o visual da barra lateral (quem está ativo)
+      document.querySelectorAll('.railItem').forEach(el => el.classList.remove('active'));
+      document.getElementById(`tab-${tabName}`).classList.add('active');
+
+      // 2. Esconde todas as telas
+      document.getElementById('view-incidents').style.display = 'none';
+      document.getElementById('view-inventory').style.display = 'none';
+
+      // 3. Mostra a tela certa
+      document.getElementById(`view-${tabName}`).style.display = 'block';
+
+      // 4. Se for inventário, carrega os dados
+      if (tabName === 'inventory') {
+        loadInventory();
+      }
+    }
+
+    // --- CARREGAR INVENTÁRIO DO PYTHON ---
+    async function loadInventory() {
+      const table = document.getElementById('inventoryTable');
+      table.innerHTML = '<tr><td colspan="5">Buscando dados na nuvem...</td></tr>';
 
       try {
-        const response = await fetch(`${API_URL_DELETE}/api/incidents`, {
-            method: "DELETE"
-        });
+        const res = await fetch(`${API_BASE}/api/inventory`);
+        const data = await res.json();
 
-        if (response.ok) {
-            alert("Histórico limpo com sucesso!");
-            window.location.reload(); // Recarrega a página para limpar a tabela visualmente
-        } else {
-            alert("Erro ao limpar histórico. Verifique o console.");
-        }
+        table.innerHTML = ""; // Limpa
+
+        data.forEach(item => {
+          // Define cor do status
+          let statusColor = "green"; 
+          if(item.status === 'Offline') statusColor = "red";
+          if(item.status === 'Warning') statusColor = "orange";
+
+          const row = `
+            <tr>
+              <td><code>${item.id}</code></td>
+              <td><b>${item.name}</b></td>
+              <td>${item.type}</td>
+              <td>${item.region}</td>
+              <td><span style="color:${statusColor}">● ${item.status}</span></td>
+            </tr>
+          `;
+          table.innerHTML += row;
+        });
       } catch (error) {
-        console.error("Erro:", error);
-        alert("Erro de conexão ao tentar apagar.");
+        console.error(error);
+        table.innerHTML = '<tr><td colspan="5" style="color:red">Erro ao carregar inventário.</td></tr>';
       }
+    }
+
+    // --- FUNÇÕES ANTIGAS (Limpar e Scripts) ---
+    async function clearHistory() {
+      if (!confirm("⚠️ ATENÇÃO: Isso vai apagar TODOS os incidentes.\n\nTem certeza?")) return;
+      try {
+        await fetch(`${API_BASE}/api/incidents`, { method: "DELETE" });
+        window.location.reload();
+      } catch (e) { alert("Erro ao apagar"); }
     }
   </script>
 
