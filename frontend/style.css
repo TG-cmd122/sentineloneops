@@ -145,7 +145,13 @@ header {
 }
 @keyframes pulseGlow { from { opacity: 0.5; filter: blur(10px); } to { opacity: 0.9; filter: blur(20px); } }
 
-.brandTitle strong { font-size: 20px; background: linear-gradient(to right, var(--text-bright), var(--text-muted)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+.brandTitle strong { 
+  font-size: 20px; 
+  background: linear-gradient(to right, var(--text-bright), var(--text-muted)); 
+  -webkit-background-clip: text; 
+  background-clip: text;  /* <--- LINHA NOVA */
+  -webkit-text-fill-color: transparent; 
+}
 .brandTitle small { color: var(--text-muted); font-family: "Space Grotesk"; letter-spacing: 0.1em; font-size: 11px; text-transform: uppercase; font-weight: 600; }
 
 .rightTools { display: flex; gap: 12px; }
@@ -290,7 +296,9 @@ main { padding-bottom: 60px; }
 .hero h1 {
   font-size: 4em; line-height: 1; margin: 0 0 16px;
   background: linear-gradient(to bottom right, var(--text-bright), var(--text-muted));
-  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  -webkit-background-clip: text; 
+  background-clip: text; /* <--- LINHA NOVA */
+  -webkit-text-fill-color: transparent;
 }
 .sub { font-size: 18px; line-height: 1.6; color: var(--text-muted); max-width: 500px; }
 
