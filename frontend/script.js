@@ -22,6 +22,7 @@ function toast(titulo, msg) {
 function getBadge(severity) {
     const cores = { crit: "crit", warn: "warn", info: "info", ok: "ok" };
     const tipo = cores[severity] || "info";
+    // Nota: O CSS novo usa classes .sev.crit etc.
     return `<span class="sev ${tipo}"><i></i>${severity.toUpperCase()}</span>`;
 }
 
@@ -32,14 +33,14 @@ function atualizarGrafico(crit, warn, total) {
 
     const healthy = total - crit - warn;
 
-    // Se o gráfico já existe, atualizamos os dados apenas
+    // Se o gráfico já existe, atualizamos os dados apenas e saímos da função
     if (myChart) {
         myChart.data.datasets[0].data = [crit, warn, (healthy < 0 ? 0 : healthy)];
         myChart.update();
         return;
     }
 
-    // Se não existe, criamos um novo
+    // Se não existe, cria um novo (Estilo Ultranova)
     myChart = new Chart(ctx, {
         type: 'doughnut',
         data: {
@@ -47,30 +48,48 @@ function atualizarGrafico(crit, warn, total) {
             datasets: [{
                 data: [crit, warn, healthy],
                 backgroundColor: [
-                    '#ff3fb4', // Mag (Crítico)
-                    '#ffc24a', // Amber (Warn)
-                    '#b9ff4a'  // Lime (Saudável)
+                    '#ff2a6d', // Neon Red
+                    '#ffc24a', // Neon Amber
+                    '#00fff2'  // Neon Cyan
                 ],
-                borderWidth: 0,
-                hoverOffset: 4
+                // Bordas escuras para separar as luzes (cor do fundo --bg-deep)
+                borderColor: '#030512', 
+                borderWidth: 3,
+                hoverOffset: 10,
+                
+                // BRILHO NO GRÁFICO (Glow Effect)
+                shadowColor: 'rgba(0, 255, 242, 0.5)',
+                shadowBlur: 20,
+                shadowOffsetX: 0,
+                shadowOffsetY: 0,
             }]
         },
         options: {
             responsive: true,
             maintainAspectRatio: false,
+            layout: { padding: 20 },
             plugins: {
-                legend: { display: false }, // Esconde legenda padrão para ficar clean
+                legend: { display: false },
                 tooltip: {
-                    backgroundColor: '#111',
+                    backgroundColor: 'rgba(10, 15, 30, 0.9)',
+                    titleColor: '#fff',
                     bodyColor: '#fff',
-                    borderColor: '#333',
-                    borderWidth: 1
+                    borderColor: 'rgba(255,255,255,0.2)',
+                    borderWidth: 1,
+                    padding: 12,
+                    displayColors: false,
+                    titleFont: { family: 'Space Grotesk', size: 14 },
+                    bodyFont: { family: 'Space Grotesk', size: 14, weight: 'bold' }
                 }
             },
-            cutout: '75%' // Deixa a rosca mais fina
+            cutout: '70%',
+            animation: {
+                animateScale: true,
+                animateRotate: true
+            }
         }
     });
-}
+} // <--- O ERRO ESTAVA AQUI: FALTAVA FECHAR ESSA CHAVE
 
 // === LÓGICA PRINCIPAL ===
 
@@ -83,7 +102,9 @@ async function carregarDados() {
         
         if (statusBadge) {
             statusBadge.textContent = "ONLINE";
-            statusBadge.style.color = "var(--a-lime)";
+            // Usando as variáveis CSS novas
+            statusBadge.style.color = "var(--neon-lime)";
+            statusBadge.style.textShadow = "0 0 10px var(--neon-lime)";
         }
 
         renderizarTabela(lista);
@@ -93,14 +114,15 @@ async function carregarDados() {
         console.error(erro);
         if (statusBadge) {
             statusBadge.textContent = "OFFLINE";
-            statusBadge.style.color = "var(--a-mag)";
+            statusBadge.style.color = "var(--neon-red)";
+            statusBadge.style.textShadow = "0 0 10px var(--neon-red)";
         }
     }
 }
 
 function renderizarTabela(lista) {
     if (lista.length === 0) {
-        tabela.innerHTML = `<tr><td colspan="5" style="text-align:center; padding: 20px; color: var(--muted);">Nenhum incidente encontrado.</td></tr>`;
+        tabela.innerHTML = `<tr><td colspan="5" style="text-align:center; padding: 20px; color: var(--text-dim);">Nenhum incidente encontrado.</td></tr>`;
         return;
     }
 
@@ -108,7 +130,7 @@ function renderizarTabela(lista) {
         <tr>
             <td>${getBadge(inc.severity)}</td>
             <td><b>${inc.service}</b></td>
-            <td class="muted">${inc.summary}</td>
+            <td style="color: var(--text-muted)">${inc.summary}</td>
             <td class="mono">${inc.id}</td>
             <td>
                 <button class="btn ghost small" onclick="analisarIA('${inc.id}')">🤖 IA</button>
