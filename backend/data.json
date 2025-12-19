@@ -1,0 +1,90 @@
+[
+  {
+    "id": "INC-1010",
+    "severity": "warn",
+    "service": "frontend-app",
+    "summary": "Falha de conex\u00e3o intermitente (Simulado)",
+    "opened_at": "2025-12-18T19:04:59.601626",
+    "acknowledged": false
+  },
+  {
+    "id": "INC-1009",
+    "severity": "warn",
+    "service": "frontend-app",
+    "summary": "Falha de conex\u00e3o intermitente (Simulado)",
+    "opened_at": "2025-12-18T19:04:35.025608",
+    "acknowledged": false
+  },
+  {
+    "id": "INC-1008",
+    "severity": "crit",
+    "service": "frontend-app",
+    "summary": "Falha de conex\u00e3o intermitente (Simulado)",
+    "opened_at": "2025-12-18T19:04:26.658058",
+    "acknowledged": false
+  },
+  {
+    "id": "INC-1007",
+    "severity": "crit",
+    "service": "frontend-app",
+    "summary": "Falha de conex\u00e3o intermitente (Simulado)",
+    "opened_at": "2025-12-18T19:00:12.889571",
+    "acknowledged": false
+  },
+  {
+    "id": "INC-1006",
+    "severity": "warn",
+    "service": "frontend-app",
+    "summary": "Falha de conex\u00e3o intermitente (Simulado)",
+    "opened_at": "2025-12-18T18:56:24.738412",
+    "acknowledged": false
+  },
+  {
+    "id": "INC-1005",
+    "severity": "warn",
+    "service": "frontend-app",
+    "summary": "Falha de conex\u00e3o intermitente (Simulado)",
+    "opened_at": "2025-12-18T18:54:20.833656",
+    "acknowledged": false
+  },
+  {
+    "id": "INC-1004",
+    "severity": "warn",
+    "service": "frontend-app",
+    "summary": "Falha de conex\u00e3o intermitente (Simulado)",
+    "opened_at": "2025-12-18T18:49:43.145259",
+    "acknowledged": false
+  },
+  {
+    "id": "INC-1003",
+    "severity": "warn",
+    "service": "frontend-app",
+    "summary": "Falha de conex\u00e3o intermitente (Simulado)",
+    "opened_at": "2025-12-18T18:44:08.425460",
+    "acknowledged": false
+  },
+  {
+    "id": "INC-1002",
+    "severity": "warn",
+    "service": "frontend-app",
+    "summary": "Falha de conex\u00e3o intermitente (Simulado)",
+    "opened_at": "2025-12-18T18:41:35.664397",
+    "acknowledged": false
+  },
+  {
+    "id": "INC-1001",
+    "severity": "warn",
+    "service": "frontend-app",
+    "summary": "Falha de conex\u00e3o intermitente (Simulado)",
+    "opened_at": "2025-12-18T18:41:35.425043",
+    "acknowledged": false
+  },
+  {
+    "id": "INC-1000",
+    "severity": "warn",
+    "service": "frontend-app",
+    "summary": "Falha de conex\u00e3o intermitente (Simulado)",
+    "opened_at": "2025-12-18T18:41:35.179490",
+    "acknowledged": false
+  }
+]

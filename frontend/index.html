@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="pt-BR" data-theme="dark">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>SentinelOneOps — Monitoramento + IA</title>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,400..900&display=swap" rel="stylesheet">
+  
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+  <header>
+    <div class="container">
+      <div class="nav">
+        <div class="brand">
+          <div class="logo"></div>
+          <div class="brandTitle">
+            <strong>SentinelOneOps</strong>
+            <small>monitoramento + IA • métricas e incidentes</small>
+          </div>
+        </div>
+        <div class="rightTools">
+          <button class="btn ghost" id="btnRefresh">Atualizar</button>
+          <button class="btn" id="btnTheme">Tema: Dark</button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+    <div class="shell">
+      <aside class="rail">
+        <div class="railInner">
+          <div class="railTop">
+            <h2>Centro de Controle</h2>
+            <span class="pill"><span class="dot"></span><span id="backendStatus">Conectando...</span></span>
+          </div>
+          <div class="railList">
+            <div class="railItem active" data-view="incidents">
+              <div class="icon">🚨</div>
+              <div><h3>Incidentes</h3><span>Gestão de Crise</span></div>
+            </div>
+            <div class="railItem" data-view="inventory">
+              <div class="icon">📦</div>
+              <div><h3>Inventário</h3><span>Ativos & Services</span></div>
+            </div>
+          </div>
+        </div>
+      </aside>
+
+      <section class="content">
+        <article class="hero reveal">
+          <div class="heroInner">
+            <h1>Observabilidade Autônoma</h1>
+            <p class="sub">Monitoramento inteligente integrado ao seu backend FastAPI.</p>
+            <div class="heroActions">
+              <button class="btn primary" id="btnCreateIncident">Simular Incidente (POST)</button>
+            </div>
+            
+            <div class="miniKpis">
+              <div class="kpi"><b id="countCrit">0</b><span>Críticos</span></div>
+              <div class="kpi"><b id="countWarn">0</b><span>Alertas</span></div>
+              <div class="kpi"><b id="countTotal">0</b><span>Total</span></div>
+            </div>
+          </div>
+        </article>
+
+        <article class="card reveal">
+          <div class="cardHead">
+            <h2>Incidentes Recentes</h2>
+          </div>
+          <div class="cardBody">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Sev</th>
+                  <th>Serviço</th>
+                  <th>Resumo</th>
+                  <th>ID</th>
+                  <th>Ações</th>
+                </tr>
+              </thead>
+              <tbody id="incTable">
+                </tbody>
+            </table>
+          </div>
+        </article>
+
+        <article class="card wide reveal" id="aiSection" style="display:none;">
+          <div class="cardHead">
+            <h2>🤖 Análise da IA</h2>
+            <button class="btn ghost" onclick="document.getElementById('aiSection').style.display='none'">Fechar</button>
+          </div>
+          <div class="cardBody">
+            <div class="insightBox">
+              <div id="aiContent">Carregando análise...</div>
+            </div>
+          </div>
+        </article>
+
+      </section>
+    </div>
+  </main>
+
+  <div class="toastWrap" id="toasts"></div>
+
+  <script type="module" src="script.js"></script>
+</body>
+</html>
