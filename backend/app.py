@@ -93,6 +93,14 @@ def create_incident(data: dict):
     save_data(INCIDENTS)
     return inc
 
+# --- NOVO: ROTA PARA APAGAR TUDO ---
+@app.delete("/api/incidents")
+def clear_all_incidents():
+    INCIDENTS.clear()  # Limpa a lista da memória
+    save_data(INCIDENTS)  # Salva a lista vazia no arquivo
+    return {"status": "success", "message": "Todos os incidentes foram apagados."}
+# -----------------------------------
+
 # === IA COPILOT (MODO HÍBRIDO: REAL OU MOCK) ===
 @app.get("/api/incidents/{inc_id}/explain")
 def explain_incident(inc_id: str):
@@ -102,7 +110,6 @@ def explain_incident(inc_id: str):
         raise HTTPException(status_code=404, detail="Incidente não encontrado")
 
     # 2. Preparar a resposta de "backup" (Simulada)
-    # Se a IA falhar, usamos isso para o usuário não ficar na mão.
     mock_explanation = f"""
     <p><b>🤖 Análise (Modo Offline/Fallback):</b></p>
     <p>O serviço <b>{inc['service']}</b> gerou um alerta de severidade <b>{inc['severity']}</b>.</p>

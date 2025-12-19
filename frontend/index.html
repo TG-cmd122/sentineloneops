@@ -108,6 +108,30 @@
 
   <div class="toastWrap" id="toasts"></div>
 
+  async function clearHistory() {
+    // Pergunta se o usuário tem certeza
+    if (!confirm("Tem certeza que deseja apagar TODOS os incidentes?")) return;
+
+    try {
+        // Chama o backend para deletar
+        // ATENÇÃO: Se seu código já tem a variável API_BASE definida, use ela.
+        // Se não, substitua API_BASE pelo link do seu site ([https://....run.app](https://....run.app))
+        const response = await fetch(`${API_BASE}/api/incidents`, {
+            method: "DELETE"
+        });
+
+        if (response.ok) {
+            alert("Histórico limpo com sucesso!");
+            window.location.reload(); // Recarrega a página para sumir tudo
+        } else {
+            alert("Erro ao limpar histórico.");
+        }
+    } catch (error) {
+        console.error("Erro:", error);
+        alert("Erro de conexão.");
+    }
+}
+
   <script type="module" src="script.js"></script>
 </body>
 </html>
